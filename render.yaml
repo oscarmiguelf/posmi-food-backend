@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: posmifood-backend
+    runtime: docker
+    plan: starter
+    healthCheckPath: /health
+    # Auto-deploy on push to main
+    branch: main
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: posmifood-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: SYNC_MODE
+        value: cloud
+      - key: LOG_LEVEL
+        value: info
+      - key: CLIENT_NAME
+        value: default
+      # Set manually in Render dashboard after deploy:
+      # SENTRY_DSN        — Sentry project DSN
+      # HUB_SECRET        — 32-byte hex shared with Local Hub (openssl rand -hex 32)
+
+databases:
+  - name: posmifood-db
+    plan: starter
+    databaseName: posmi_food
+    user: posmi

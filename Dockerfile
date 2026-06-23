@@ -15,6 +15,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY prisma ./prisma
+COPY config ./config
 
 # Run migrations then start
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]

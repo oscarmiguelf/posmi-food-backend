@@ -23,6 +23,7 @@ import { PurchaseOrdersModule } from './modules/purchase-orders/purchase-orders.
 import { CustomersModule } from './modules/customers/customers.module';
 import { ReservationsModule } from './modules/reservations/reservations.module';
 import { SyncModule } from './modules/sync/sync.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { SyncModule } from './modules/sync/sync.module';
     SyncModule,
     // Config
     ConfigAppModule,
+    HealthModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },
