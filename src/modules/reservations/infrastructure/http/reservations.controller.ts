@@ -29,6 +29,8 @@ import {
   UpdateReservationDto,
 } from '../../application/dto/reservation.dto';
 import { OutboxService } from '../../../sync/outbox/outbox.service';
+import { RequireModule } from '../../../config/decorators/require-module.decorator';
+import { ModuleEnabledGuard } from '../../../config/guards/module-enabled.guard';
 
 type ReservationStatus =
   | 'pending'
@@ -39,7 +41,8 @@ type ReservationStatus =
 
 @ApiTags('reservations')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, PermissionGuard)
+@UseGuards(JwtAuthGuard, PermissionGuard, ModuleEnabledGuard)
+@RequireModule('reservations')
 @Controller('reservations')
 export class ReservationsController {
   constructor(

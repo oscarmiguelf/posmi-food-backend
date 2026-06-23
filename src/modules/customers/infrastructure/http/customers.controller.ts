@@ -14,6 +14,8 @@ import { ApiQuery, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
 import { PermissionGuard } from '../../../../shared/guards/permission.guard';
 import { RequirePermission } from '../../../../shared/decorators/require-permission.decorator';
+import { ModuleEnabledGuard } from '../../../config/guards/module-enabled.guard';
+import { RequireModule } from '../../../config/decorators/require-module.decorator';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 import {
   toResponse,
@@ -173,6 +175,8 @@ export class CustomersController {
 
   @Get(':id/loyalty')
   @RequirePermission('MANAGE_CUSTOMERS')
+  @UseGuards(ModuleEnabledGuard)
+  @RequireModule('loyalty')
   async loyalty(@Param('id', ParseUUIDPipe) id: string) {
     const customer = await this.prisma.customer.findFirst({
       where: { id, deletedAt: null },

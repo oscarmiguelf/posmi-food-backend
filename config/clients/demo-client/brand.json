@@ -1,0 +1,8 @@
+{
+  "companyName": "Tacos El Trompo",
+  "productDisplayName": "El Trompo POS",
+  "logo": {
+    "full": "https://ejemplo.com/logo.png",
+    "icon": "https://ejemplo.com/icon.png"
+  }
+}

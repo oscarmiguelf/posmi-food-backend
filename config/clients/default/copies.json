@@ -1,0 +1,14 @@
+{
+  "locale": "es-MX",
+  "strings": {
+    "tables.title": "Mesas",
+    "orders.addItem": "Agregar producto",
+    "orders.close": "Cobrar",
+    "orders.status.open": "Abierta",
+    "orders.status.in_kitchen": "En cocina",
+    "orders.status.ready": "Lista",
+    "orders.status.closed": "Cerrada",
+    "reservations.title": "Reservaciones",
+    "loyalty.points": "Puntos"
+  }
+}

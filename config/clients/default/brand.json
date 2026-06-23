@@ -1,0 +1,9 @@
+{
+  "companyName": "PosmiFood",
+  "productDisplayName": "PosmiFood POS",
+  "logo": {
+    "full": "https://assets.posmifood.com/logo-full.png",
+    "icon": "https://assets.posmifood.com/icon.png",
+    "darkVariant": null
+  }
+}

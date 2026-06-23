@@ -1,0 +1,8 @@
+{
+  "modules": {
+    "reservations": true,
+    "loyalty": true,
+    "purchasing": true,
+    "purchaseSuggestions": true
+  }
+}

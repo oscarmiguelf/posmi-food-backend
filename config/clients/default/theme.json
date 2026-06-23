@@ -1,0 +1,11 @@
+{
+  "colors": {
+    "primary": "#1B4F72",
+    "secondary": "#2E86C1",
+    "danger": "#C0392B",
+    "success": "#1E8449",
+    "warning": "#B7770D",
+    "background": "#F4F6F7",
+    "textPrimary": "#1C2833"
+  }
+}

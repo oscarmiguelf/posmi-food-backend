@@ -28,10 +28,13 @@ import {
   CreatePurchaseOrderDto,
   ReceivePurchaseOrderDto,
 } from '../../application/dto/purchase-order.dto';
+import { ModuleEnabledGuard } from '../../../config/guards/module-enabled.guard';
+import { RequireModule } from '../../../config/decorators/require-module.decorator';
 
 @ApiTags('purchase-orders')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, PermissionGuard)
+@UseGuards(JwtAuthGuard, PermissionGuard, ModuleEnabledGuard)
+@RequireModule('purchasing')
 @Controller('purchase-orders')
 export class PurchaseOrdersController {
   constructor(private readonly prisma: PrismaService) {}
