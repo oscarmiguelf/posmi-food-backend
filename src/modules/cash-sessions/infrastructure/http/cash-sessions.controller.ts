@@ -250,4 +250,93 @@ export class CashSessionsController {
 
     return toResponse(closed);
   }
+
+  @Get(':id/report')
+  @RequirePermission('VIEW_FINANCIAL_REPORTS')
+  async report(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    const session = await this.prisma.cashRegisterSession.findFirst({
+      where: { id, branchId: { in: user.branchIds }, deletedAt: null },
+      include: {
+        cashier: { select: { id: true, name: true } },
+        cashMovements: { orderBy: { createdAt: 'asc' } },
+      },
+    });
+    if (!session) throw AppError.notFound('CashRegisterSession', id);
+
+    const salesMvts = session.cashMovements.filter((m) => m.type === 'sale');
+    const payinMvts = session.cashMovements.filter((m) => m.type === 'payin');
+    const payoutMvts = session.cashMovements.filter((m) => m.type === 'payout');
+
+    const sum = (list: typeof salesMvts) =>
+      list.reduce(
+        (acc, m) => acc.plus(new Decimal(m.amount.toString())),
+        new Decimal(0),
+      );
+
+    const salesTotal = sum(salesMvts);
+    const payinsTotal = sum(payinMvts);
+    const payoutsTotal = sum(payoutMvts);
+
+    // Group by payment method
+    const byMethod = new Map<string, Decimal>();
+    for (const m of session.cashMovements) {
+      byMethod.set(
+        m.paymentMethod,
+        (byMethod.get(m.paymentMethod) ?? new Decimal(0)).plus(
+          new Decimal(m.amount.toString()),
+        ),
+      );
+    }
+
+    // IVA back-calculation (section 3.14) — sales prices always include IVA
+    const ivaRate = new Decimal('0.16');
+    const netRevenue = salesTotal.div(ivaRate.plus(1)).toDecimalPlaces(2);
+    const ivaCollected = salesTotal.minus(netRevenue).toDecimalPlaces(2);
+
+    // Recalculate system closing amount
+    const systemClosing = session.cashMovements.reduce((acc, m) => {
+      const amount = new Decimal(m.amount.toString());
+      return m.type === 'sale' || m.type === 'payin'
+        ? acc.plus(amount)
+        : acc.minus(amount);
+    }, new Decimal(session.openingAmount.toString()));
+
+    return toResponse({
+      session: {
+        id: session.id,
+        cashier: session.cashier,
+        openedAt: session.openedAt,
+        closedAt: session.closedAt ?? null,
+        openingAmount: session.openingAmount.toString(),
+        closingAmountDeclared:
+          session.closingAmountDeclared?.toString() ?? null,
+        closingAmountSystem: systemClosing.toFixed(2),
+        difference: session.closingAmountDeclared
+          ? new Decimal(session.closingAmountDeclared.toString())
+              .minus(systemClosing)
+              .toFixed(2)
+          : null,
+      },
+      movements: {
+        sales: { count: salesMvts.length, total: salesTotal.toFixed(2) },
+        payins: { count: payinMvts.length, total: payinsTotal.toFixed(2) },
+        payouts: {
+          count: payoutMvts.length,
+          total: payoutsTotal.toFixed(2),
+        },
+      },
+      byPaymentMethod: Object.fromEntries(
+        Array.from(byMethod.entries()).map(([k, v]) => [k, v.toFixed(2)]),
+      ),
+      revenue: {
+        gross: salesTotal.toFixed(2),
+        ivaCollected: ivaCollected.toFixed(2),
+        net: netRevenue.toFixed(2),
+      },
+      totalMovements: session.cashMovements.length,
+    });
+  }
 }
