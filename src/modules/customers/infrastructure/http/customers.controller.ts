@@ -87,6 +87,7 @@ export class CustomersController {
         phone: dto.phone,
         email: dto.email,
         notes: dto.notes,
+        privacyConsentAt: dto.privacyConsent ? new Date() : null,
       },
     });
     return toResponse(customer);

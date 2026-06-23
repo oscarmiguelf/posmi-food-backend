@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_FILTER } from '@nestjs/core';
+import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
 import { EventsModule } from './shared/websocket/events.module';
+import { PinoLoggerModule } from './shared/logger/pino-logger.module';
 import { GlobalExceptionFilter } from './shared/filters/http-exception.filter';
+import { AuditInterceptor } from './shared/interceptors/audit.interceptor';
 // Feature modules
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
@@ -26,6 +28,7 @@ import { SyncModule } from './modules/sync/sync.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    PinoLoggerModule,
     EventsModule,
     // Auth & identity
     AuthModule,
@@ -51,6 +54,9 @@ import { SyncModule } from './modules/sync/sync.module';
     // Config
     ConfigAppModule,
   ],
-  providers: [{ provide: APP_FILTER, useClass: GlobalExceptionFilter }],
+  providers: [
+    { provide: APP_FILTER, useClass: GlobalExceptionFilter },
+    { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
+  ],
 })
 export class AppModule {}

@@ -577,10 +577,12 @@ model Customer {
   deletedAt DateTime? @map("deleted_at")
   version   Int       @default(0)
 
-  name  String
-  phone String?
-  email String?
-  notes String?
+  name               String
+  phone              String?
+  email              String?
+  notes              String?
+  // LFPDPPP (section 3.10): timestamp when the customer acknowledged the privacy notice
+  privacyConsentAt   DateTime? @map("privacy_consent_at")
 
   orders        Order[]
   reservations  Reservation[]

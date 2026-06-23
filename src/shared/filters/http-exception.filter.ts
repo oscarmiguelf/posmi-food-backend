@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import * as Sentry from '@sentry/nestjs';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -21,6 +22,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       const status = exception.getStatus();
       const body = exception.getResponse();
 
+      if (status >= 500) {
+        Sentry.captureException(exception);
+      }
+
       if (typeof body === 'object' && body !== null && 'code' in body) {
         return response.status(status).json(body);
       }
@@ -31,9 +36,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       });
     }
 
+    Sentry.captureException(exception);
     this.logger.error(
-      `Unhandled error on ${request.method} ${request.url}`,
-      exception,
+      `Unhandled exception on ${request.method} ${request.url}`,
+      exception instanceof Error ? exception.stack : String(exception),
     );
 
     return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
