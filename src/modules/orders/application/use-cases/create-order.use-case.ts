@@ -57,6 +57,14 @@ export class CreateOrderUseCase {
                 unitPriceWithTax: menuItem.salePriceWithTax,
                 stationId: primaryStation.stationId,
                 notes: item.notes,
+                ...(item.modifiers?.length && {
+                  modifiers: {
+                    create: item.modifiers.map((m) => ({
+                      ingredientName: m.ingredientName,
+                      action: m.action,
+                    })),
+                  },
+                }),
               };
             }),
           },
@@ -73,17 +81,31 @@ export class CreateOrderUseCase {
             include: {
               menuItem: { select: { id: true, name: true, category: true } },
               station: { select: { id: true, name: true } },
+              modifiers: true,
             },
           },
           table: { select: { id: true, label: true } },
         },
       });
 
-      // Mark table as occupied
-      if (dto.tableId) {
+      // Mark table(s) as occupied
+      const allTableIds = [dto.tableId, ...(dto.extraTableIds ?? [])].filter(
+        (id): id is string => !!id,
+      );
+      for (const tid of allTableIds) {
         await tx.table.update({
-          where: { id: dto.tableId },
+          where: { id: tid },
           data: { status: 'occupied', version: { increment: 1 } },
+        });
+      }
+
+      // Record merged tables
+      if (allTableIds.length > 1) {
+        await tx.orderTable.createMany({
+          data: allTableIds.map((tableId) => ({
+            orderId: created.id,
+            tableId,
+          })),
         });
       }
 

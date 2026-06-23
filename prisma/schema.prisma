@@ -160,6 +160,7 @@ model Table {
   branch       Branch        @relation(fields: [branchId], references: [id])
   orders       Order[]
   reservations Reservation[]
+  orderTables  OrderTable[]
 
   @@unique([branchId, label, deletedAt])
   @@map("tables")
@@ -181,6 +182,20 @@ model Station {
   @@map("stations")
 }
 
+model MenuItemType {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  version   Int       @default(0)
+
+  name String @unique
+
+  menuItems MenuItem[]
+
+  @@map("menu_item_types")
+}
+
 model MenuItem {
   id        String    @id @default(uuid())
   createdAt DateTime  @default(now()) @map("created_at")
@@ -190,9 +205,11 @@ model MenuItem {
 
   name              String
   category          String
+  typeId            String?  @map("type_id")
   salePriceWithTax  Decimal  @map("sale_price_with_tax") @db.Decimal(12, 2)
   isAvailable       Boolean  @default(true) @map("is_available")
 
+  type             MenuItemType? @relation(fields: [typeId], references: [id])
   menuItemStations MenuItemStation[]
   orderItems       OrderItem[]
   recipe           Recipe?
@@ -240,6 +257,7 @@ model Order {
   discounts     Discount[]
   statusHistory OrderStatusHistory[]
   loyaltyPoints LoyaltyPoints[]
+  orderTables   OrderTable[]
 
   @@map("orders")
 }
@@ -262,8 +280,31 @@ model OrderItem {
   menuItem  MenuItem @relation(fields: [menuItemId], references: [id])
   station   Station  @relation(fields: [stationId], references: [id])
   discounts Discount[]
+  modifiers OrderItemModifier[]
 
   @@map("order_items")
+}
+
+model OrderItemModifier {
+  id             String @id @default(uuid())
+  orderItemId    String @map("order_item_id")
+  ingredientName String @map("ingredient_name")
+  action         String // 'remove' | 'add'
+
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id])
+
+  @@map("order_item_modifiers")
+}
+
+model OrderTable {
+  orderId String @map("order_id")
+  tableId String @map("table_id")
+
+  order Order @relation(fields: [orderId], references: [id])
+  table Table @relation(fields: [tableId], references: [id])
+
+  @@id([orderId, tableId])
+  @@map("order_tables")
 }
 
 model OrderStatusHistory {

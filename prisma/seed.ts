@@ -89,6 +89,17 @@ async function main() {
     console.log('  Admin user already exists');
   }
 
+  // Seed default menu item types
+  const defaultTypes = ['Comida', 'Bebida', 'Postre', 'Entrada', 'Complemento'];
+  for (const typeName of defaultTypes) {
+    await prisma.menuItemType.upsert({
+      where: { name: typeName },
+      update: {},
+      create: { name: typeName },
+    });
+  }
+  console.log(`  Menu item types: ${defaultTypes.join(', ')}`);
+
   console.log('Seed complete.');
 }
 

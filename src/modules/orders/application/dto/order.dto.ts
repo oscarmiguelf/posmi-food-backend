@@ -13,6 +13,16 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { OrderStatus } from '@prisma/client';
 
+export class ItemModifierDto {
+  @ApiProperty()
+  @IsString()
+  ingredientName: string;
+
+  @ApiProperty({ enum: ['remove', 'add'] })
+  @IsEnum(['remove', 'add'])
+  action: 'remove' | 'add';
+}
+
 export class OrderItemInputDto {
   @ApiProperty()
   @IsUUID()
@@ -27,6 +37,13 @@ export class OrderItemInputDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiPropertyOptional({ type: [ItemModifierDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ItemModifierDto)
+  modifiers?: ItemModifierDto[];
 }
 
 export class CreateOrderDto {
@@ -38,6 +55,15 @@ export class CreateOrderDto {
   @IsOptional()
   @IsUUID()
   tableId?: string;
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'IDs de mesas adicionales (para juntar mesas)',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  extraTableIds?: string[];
 
   @ApiPropertyOptional()
   @IsOptional()

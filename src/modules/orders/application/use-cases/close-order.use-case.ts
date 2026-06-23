@@ -106,6 +106,17 @@ export class CloseOrderUseCase {
       }
     }
 
+    // Resolve all table IDs (including merged) before transaction
+    const orderTablesJoined = await this.prisma.orderTable.findMany({
+      where: { orderId },
+    });
+    const allTableIds =
+      orderTablesJoined.length > 0
+        ? orderTablesJoined.map((ot) => ot.tableId)
+        : order.tableId
+          ? [order.tableId]
+          : [];
+
     const depletedIngredients: {
       id: string;
       name: string;
@@ -128,10 +139,10 @@ export class CloseOrderUseCase {
         },
       });
 
-      // Free the table
-      if (order.tableId) {
+      // Free all tables (including merged)
+      for (const tid of allTableIds) {
         await tx.table.update({
-          where: { id: order.tableId },
+          where: { id: tid },
           data: { status: 'free', version: { increment: 1 } },
         });
       }
@@ -254,9 +265,9 @@ export class CloseOrderUseCase {
       total: total.toFixed(2),
     });
 
-    if (order.tableId) {
+    for (const tid of allTableIds) {
       this.events.emitToBranch(branchId, 'table.status_changed', {
-        tableId: order.tableId,
+        tableId: tid,
         status: 'free',
       });
     }

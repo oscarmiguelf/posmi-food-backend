@@ -62,9 +62,13 @@ export class OrdersController {
           include: {
             menuItem: { select: { id: true, name: true } },
             station: { select: { id: true, name: true } },
+            modifiers: true,
           },
         },
         discounts: true,
+        orderTables: {
+          include: { table: { select: { id: true, label: true } } },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -81,9 +85,12 @@ export class OrdersController {
       where: { id, branchId: { in: user.branchIds }, deletedAt: null },
       include: {
         table: true,
-        items: { include: { menuItem: true, station: true } },
+        items: { include: { menuItem: true, station: true, modifiers: true } },
         discounts: true,
         statusHistory: { orderBy: { createdAt: 'asc' } },
+        orderTables: {
+          include: { table: { select: { id: true, label: true } } },
+        },
       },
     });
     if (!order) throw AppError.notFound('Order', id);
