@@ -1,0 +1,701 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// 6.1 Identidad y acceso
+// ─────────────────────────────────────────────
+
+model Company {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  version   Int       @default(0)
+
+  name  String  @unique
+  taxId String? @map("tax_id")
+
+  branches Branch[]
+  users    User[]
+
+  @@map("companies")
+}
+
+model Branch {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  version   Int       @default(0)
+
+  companyId String @map("company_id")
+  name      String
+  address   String?
+  timezone  String  @default("America/Mexico_City")
+
+  company              Company               @relation(fields: [companyId], references: [id])
+  userBranches         UserBranch[]
+  tables               Table[]
+  orders               Order[]
+  cashRegisterSessions CashRegisterSession[]
+  reservations         Reservation[]
+  inventoryMovements   InventoryMovement[]
+
+  @@unique([companyId, name])
+  @@map("branches")
+}
+
+model User {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  version   Int       @default(0)
+
+  companyId    String  @map("company_id")
+  roleId       String  @map("role_id")
+  name         String
+  email        String
+  passwordHash String  @map("password_hash")
+  isActive     Boolean @default(true) @map("is_active")
+
+  company              Company               @relation(fields: [companyId], references: [id])
+  role                 Role                  @relation(fields: [roleId], references: [id])
+  userBranches         UserBranch[]
+  discountsApplied     Discount[]
+  cashRegisterSessions CashRegisterSession[]
+  purchaseOrders       PurchaseOrder[]
+  goodsReceipts        GoodsReceipt[]
+  auditLogs            AuditLog[]
+  unauthorizedAttempts UnauthorizedAttempt[]
+
+  @@unique([companyId, email, deletedAt])
+  @@map("users")
+}
+
+model UserBranch {
+  userId    String @map("user_id")
+  branchId  String @map("branch_id")
+
+  user   User   @relation(fields: [userId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+
+  @@id([userId, branchId])
+  @@map("user_branches")
+}
+
+model Role {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  version   Int       @default(0)
+
+  name String @unique
+
+  users           User[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  version   Int       @default(0)
+
+  code        String @unique
+  description String?
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String @map("role_id")
+  permissionId String @map("permission_id")
+
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+// ─────────────────────────────────────────────
+// 6.2 Operación core
+// ─────────────────────────────────────────────
+
+enum TableStatus {
+  free
+  occupied
+  bill_requested
+
+  @@map("table_status")
+}
+
+model Table {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  version   Int       @default(0)
+
+  branchId String      @map("branch_id")
+  label    String
+  capacity Int
+  status   TableStatus @default(free)
+
+  branch       Branch        @relation(fields: [branchId], references: [id])
+  orders       Order[]
+  reservations Reservation[]
+
+  @@unique([branchId, label, deletedAt])
+  @@map("tables")
+}
+
+model Station {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  version   Int       @default(0)
+
+  name String @unique
+
+  menuItemStations MenuItemStation[]
+  orderItems       OrderItem[]
+
+  @@map("stations")
+}
+
+model MenuItem {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  version   Int       @default(0)
+
+  name              String
+  category          String
+  salePriceWithTax  Decimal  @map("sale_price_with_tax") @db.Decimal(12, 2)
+  isAvailable       Boolean  @default(true) @map("is_available")
+
+  menuItemStations MenuItemStation[]
+  orderItems       OrderItem[]
+  recipe           Recipe?
+
+  @@map("menu_items")
+}
+
+model MenuItemStation {
+  menuItemId String @map("menu_item_id")
+  stationId  String @map("station_id")
+
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+  station  Station  @relation(fields: [stationId], references: [id])
+
+  @@id([menuItemId, stationId])
+  @@map("menu_item_stations")
+}
+
+enum OrderStatus {
+  open
+  in_kitchen
+  ready
+  closed
+
+  @@map("order_status")
+}
+
+model Order {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  version   Int       @default(0)
+
+  branchId       String      @map("branch_id")
+  tableId        String?     @map("table_id")
+  customerId     String?     @map("customer_id")
+  status         OrderStatus @default(open)
+  idempotencyKey String      @unique @map("idempotency_key")
+
+  branch        Branch               @relation(fields: [branchId], references: [id])
+  table         Table?               @relation(fields: [tableId], references: [id])
+  customer      Customer?            @relation(fields: [customerId], references: [id])
+  items         OrderItem[]
+  discounts     Discount[]
+  statusHistory OrderStatusHistory[]
+  loyaltyPoints LoyaltyPoints[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  version   Int       @default(0)
+
+  orderId          String  @map("order_id")
+  menuItemId       String  @map("menu_item_id")
+  stationId        String  @map("station_id")
+  quantity         Int
+  unitPriceWithTax Decimal @map("unit_price_with_tax") @db.Decimal(12, 2)
+  notes            String?
+
+  order     Order    @relation(fields: [orderId], references: [id])
+  menuItem  MenuItem @relation(fields: [menuItemId], references: [id])
+  station   Station  @relation(fields: [stationId], references: [id])
+  discounts Discount[]
+
+  @@map("order_items")
+}
+
+model OrderStatusHistory {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  orderId    String      @map("order_id")
+  fromStatus OrderStatus @map("from_status")
+  toStatus   OrderStatus @map("to_status")
+  changedBy  String      @map("changed_by")
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@map("order_status_history")
+}
+
+enum DiscountType {
+  fixed
+  percentage
+  product
+  loyalty
+  coupon
+
+  @@map("discount_type")
+}
+
+enum DiscountScope {
+  order
+  line
+
+  @@map("discount_scope")
+}
+
+model Discount {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  version   Int       @default(0)
+
+  orderId     String?       @map("order_id")
+  orderItemId String?       @map("order_item_id")
+  type        DiscountType
+  scope       DiscountScope
+  value       Decimal       @db.Decimal(12, 2)
+  appliedById String        @map("applied_by_id")
+
+  order       Order?     @relation(fields: [orderId], references: [id])
+  orderItem   OrderItem? @relation(fields: [orderItemId], references: [id])
+  appliedBy   User       @relation(fields: [appliedById], references: [id])
+
+  @@map("discounts")
+}
+
+// ─────────────────────────────────────────────
+// 6.3 Insumos y costos
+// ─────────────────────────────────────────────
+
+model Ingredient {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  version   Int       @default(0)
+
+  name          String
+  unit          String
+  unitCost      Decimal  @map("unit_cost") @db.Decimal(12, 2)
+  stockQuantity Decimal  @map("stock_quantity") @db.Decimal(10, 3)
+  minStock      Decimal  @map("min_stock") @db.Decimal(10, 3)
+
+  recipeItems        RecipeItem[]
+  inventoryMovements InventoryMovement[]
+  purchaseOrderItems PurchaseOrderItem[]
+  goodsReceiptItems  GoodsReceiptItem[]
+
+  @@unique([name, deletedAt])
+  @@map("ingredients")
+}
+
+model Recipe {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  version   Int       @default(0)
+
+  menuItemId String @unique @map("menu_item_id")
+
+  menuItem    MenuItem     @relation(fields: [menuItemId], references: [id])
+  recipeItems RecipeItem[]
+
+  @@map("recipes")
+}
+
+model RecipeItem {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  version   Int       @default(0)
+
+  recipeId     String  @map("recipe_id")
+  ingredientId String  @map("ingredient_id")
+  quantity     Decimal @db.Decimal(10, 3)
+  unit         String
+
+  recipe     Recipe     @relation(fields: [recipeId], references: [id])
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@unique([recipeId, ingredientId])
+  @@map("recipe_items")
+}
+
+enum InventoryMovementReason {
+  sale
+  waste
+  adjustment
+  purchase_receipt
+
+  @@map("inventory_movement_reason")
+}
+
+model InventoryMovement {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  branchId     String                  @map("branch_id")
+  ingredientId String                  @map("ingredient_id")
+  quantityDelta Decimal                @map("quantity_delta") @db.Decimal(10, 3)
+  reason       InventoryMovementReason
+  referenceId  String?                 @map("reference_id")
+  notes        String?
+
+  branch     Branch     @relation(fields: [branchId], references: [id])
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@map("inventory_movements")
+}
+
+// ─────────────────────────────────────────────
+// 6.4 Compras
+// ─────────────────────────────────────────────
+
+enum PurchaseOrderStatus {
+  draft
+  sent
+  received
+
+  @@map("purchase_order_status")
+}
+
+model Supplier {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  version   Int       @default(0)
+
+  name    String
+  contact String?
+  phone   String?
+  email   String?
+
+  purchaseOrders PurchaseOrder[]
+
+  @@unique([name, deletedAt])
+  @@map("suppliers")
+}
+
+model PurchaseOrder {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  version   Int       @default(0)
+
+  supplierId     String              @map("supplier_id")
+  createdById    String              @map("created_by_id")
+  status         PurchaseOrderStatus @default(draft)
+  idempotencyKey String              @unique @map("idempotency_key")
+
+  supplier      Supplier            @relation(fields: [supplierId], references: [id])
+  createdBy     User                @relation(fields: [createdById], references: [id])
+  items         PurchaseOrderItem[]
+  goodsReceipts GoodsReceipt[]
+
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  version   Int       @default(0)
+
+  purchaseOrderId String  @map("purchase_order_id")
+  ingredientId    String  @map("ingredient_id")
+  quantityOrdered Decimal @map("quantity_ordered") @db.Decimal(10, 3)
+  unitCost        Decimal @map("unit_cost") @db.Decimal(12, 2)
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  ingredient    Ingredient    @relation(fields: [ingredientId], references: [id])
+
+  @@map("purchase_order_items")
+}
+
+model GoodsReceipt {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  version   Int       @default(0)
+
+  purchaseOrderId String   @map("purchase_order_id")
+  receivedById    String   @map("received_by_id")
+  receivedAt      DateTime @map("received_at")
+  idempotencyKey  String   @unique @map("idempotency_key")
+
+  purchaseOrder PurchaseOrder      @relation(fields: [purchaseOrderId], references: [id])
+  receivedBy    User               @relation(fields: [receivedById], references: [id])
+  items         GoodsReceiptItem[]
+
+  @@map("goods_receipts")
+}
+
+model GoodsReceiptItem {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  version   Int       @default(0)
+
+  goodsReceiptId    String  @map("goods_receipt_id")
+  ingredientId      String  @map("ingredient_id")
+  quantityOrdered   Decimal @map("quantity_ordered") @db.Decimal(10, 3)
+  quantityReceived  Decimal @map("quantity_received") @db.Decimal(10, 3)
+
+  goodsReceipt GoodsReceipt @relation(fields: [goodsReceiptId], references: [id])
+  ingredient   Ingredient   @relation(fields: [ingredientId], references: [id])
+
+  @@map("goods_receipt_items")
+}
+
+// ─────────────────────────────────────────────
+// 6.5 Financiero
+// ─────────────────────────────────────────────
+
+model CashRegisterSession {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  version   Int       @default(0)
+
+  branchId               String    @map("branch_id")
+  cashierId              String    @map("cashier_id")
+  openedAt               DateTime  @map("opened_at")
+  closedAt               DateTime? @map("closed_at")
+  openingAmount          Decimal   @map("opening_amount") @db.Decimal(12, 2)
+  closingAmountDeclared  Decimal?  @map("closing_amount_declared") @db.Decimal(12, 2)
+  closingAmountSystem    Decimal?  @map("closing_amount_system") @db.Decimal(12, 2)
+  idempotencyKey         String    @unique @map("idempotency_key")
+
+  branch        Branch         @relation(fields: [branchId], references: [id])
+  cashier       User           @relation(fields: [cashierId], references: [id])
+  cashMovements CashMovement[]
+
+  @@map("cash_register_sessions")
+}
+
+enum CashMovementType {
+  sale
+  payout
+  payin
+
+  @@map("cash_movement_type")
+}
+
+enum PaymentMethod {
+  cash
+  card
+  transfer
+
+  @@map("payment_method")
+}
+
+model CashMovement {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  sessionId      String           @map("session_id")
+  type           CashMovementType
+  amount         Decimal          @db.Decimal(12, 2)
+  paymentMethod  PaymentMethod    @map("payment_method")
+  referenceId    String?          @map("reference_id")
+  idempotencyKey String           @unique @map("idempotency_key")
+  notes          String?
+
+  session CashRegisterSession @relation(fields: [sessionId], references: [id])
+
+  @@map("cash_movements")
+}
+
+// ─────────────────────────────────────────────
+// 6.6 Clientes
+// ─────────────────────────────────────────────
+
+model Customer {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  version   Int       @default(0)
+
+  name  String
+  phone String?
+  email String?
+  notes String?
+
+  orders        Order[]
+  reservations  Reservation[]
+  loyaltyPoints LoyaltyPoints[]
+
+  @@map("customers")
+}
+
+enum ReservationStatus {
+  pending
+  confirmed
+  arrived
+  no_show
+  cancelled
+
+  @@map("reservation_status")
+}
+
+model Reservation {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  version   Int       @default(0)
+
+  branchId   String            @map("branch_id")
+  customerId String            @map("customer_id")
+  tableId    String?           @map("table_id")
+  dateTime   DateTime          @map("date_time")
+  partySize  Int               @map("party_size")
+  status     ReservationStatus @default(pending)
+  notes      String?
+
+  branch   Branch   @relation(fields: [branchId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id])
+  table    Table?   @relation(fields: [tableId], references: [id])
+
+  @@map("reservations")
+}
+
+model LoyaltyPoints {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  customerId String  @map("customer_id")
+  orderId    String  @map("order_id")
+  points     Int
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  order    Order    @relation(fields: [orderId], references: [id])
+
+  @@map("loyalty_points")
+}
+
+// ─────────────────────────────────────────────
+// 6.7 Logs y seguridad (inmutables)
+// ─────────────────────────────────────────────
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  entityName String  @map("entity_name")
+  entityId   String  @map("entity_id")
+  action     String
+  oldValue   Json?   @map("old_value")
+  newValue   Json?   @map("new_value")
+  userId     String  @map("user_id")
+  roleAtTime String  @map("role_at_time")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+model UnauthorizedAttempt {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  userId             String  @map("user_id")
+  action             String
+  requiredPermission String  @map("required_permission")
+  endpoint           String?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("unauthorized_attempts")
+}
+
+model ProcessedOperation {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  idempotencyKey String   @unique @map("idempotency_key")
+  result         Json
+  processedAt    DateTime @map("processed_at")
+  expiresAt      DateTime @map("expires_at")
+
+  @@map("processed_operations")
+}
+
+// ─────────────────────────────────────────────
+// Outbox pattern (Sync Servidor Local → Nube)
+// ─────────────────────────────────────────────
+
+model OutboxEvent {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  eventType      String   @map("event_type")
+  payload        Json
+  idempotencyKey String   @unique @map("idempotency_key")
+  processedAt    DateTime? @map("processed_at")
+  failedAt       DateTime? @map("failed_at")
+  retryCount     Int       @default(0) @map("retry_count")
+
+  @@map("outbox_events")
+}
