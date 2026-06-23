@@ -48,6 +48,8 @@ export class UsersController {
         isActive: true,
         role: { select: { id: true, name: true } },
         userBranches: { select: { branchId: true } },
+        stationId: true,
+        station: { select: { id: true, name: true } },
         createdAt: true,
       },
       orderBy: { name: 'asc' },
@@ -85,6 +87,9 @@ export class UsersController {
           name: dto.name,
           roleId: dto.roleId,
           isActive: dto.isActive,
+          ...(dto.stationId !== undefined && {
+            stationId: dto.stationId || null,
+          }),
           version: { increment: 1 },
         },
         select: {

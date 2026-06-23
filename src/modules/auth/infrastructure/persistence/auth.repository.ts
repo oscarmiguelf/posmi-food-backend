@@ -17,6 +17,7 @@ export class AuthRepository implements AuthRepositoryPort {
           include: { rolePermissions: { include: { permission: true } } },
         },
         userBranches: true,
+        station: true,
       },
     });
     if (!user) return null;
@@ -31,6 +32,7 @@ export class AuthRepository implements AuthRepositoryPort {
           include: { rolePermissions: { include: { permission: true } } },
         },
         userBranches: true,
+        station: true,
       },
     });
     if (!user) return null;
@@ -100,6 +102,7 @@ export class AuthRepository implements AuthRepositoryPort {
       rolePermissions: { permission: { code: string } }[];
     };
     userBranches: { branchId: string }[];
+    station?: { id: string; name: string } | null;
   }): UserAuthRecord {
     return {
       id: user.id,
@@ -111,6 +114,8 @@ export class AuthRepository implements AuthRepositoryPort {
       roleName: user.role.name,
       permissions: user.role.rolePermissions.map((rp) => rp.permission.code),
       branchIds: user.userBranches.map((ub) => ub.branchId),
+      stationId: user.station?.id,
+      stationName: user.station?.name,
     };
   }
 }

@@ -31,6 +31,8 @@ export class LoginUseCase {
       roleName: user.roleName,
       companyId: user.companyId,
       branchIds: user.branchIds,
+      stationId: user.stationId,
+      stationName: user.stationName,
     });
   }
 
@@ -53,6 +55,8 @@ export class LoginUseCase {
       roleName: user.roleName,
       companyId: user.companyId,
       branchIds: user.branchIds,
+      stationId: user.stationId,
+      stationName: user.stationName,
     });
   }
 

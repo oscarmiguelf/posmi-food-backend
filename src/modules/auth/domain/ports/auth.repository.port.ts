@@ -8,6 +8,8 @@ export interface UserAuthRecord {
   roleName: string;
   permissions: string[];
   branchIds: string[];
+  stationId?: string;
+  stationName?: string;
 }
 
 export abstract class AuthRepositoryPort {

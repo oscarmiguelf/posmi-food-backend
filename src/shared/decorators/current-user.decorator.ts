@@ -8,6 +8,8 @@ export class CurrentUserPayload {
   roleName: string;
   companyId: string;
   branchIds: string[];
+  stationId?: string;
+  stationName?: string;
 }
 
 interface AuthenticatedRequest extends Request {

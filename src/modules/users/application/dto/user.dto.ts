@@ -29,6 +29,11 @@ export class CreateUserDto {
   @ApiProperty({ type: [String] })
   @IsUUID('4', { each: true })
   branchIds: string[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  stationId?: string;
 }
 
 export class UpdateUserDto {
@@ -51,6 +56,11 @@ export class UpdateUserDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  stationId?: string;
 
   @ApiProperty()
   @IsOptional()

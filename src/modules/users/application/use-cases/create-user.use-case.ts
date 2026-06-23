@@ -25,6 +25,7 @@ export class CreateUserUseCase {
           passwordHash,
           roleId: dto.roleId,
           companyId: caller.companyId,
+          ...(dto.stationId && { stationId: dto.stationId }),
         },
         select: {
           id: true,

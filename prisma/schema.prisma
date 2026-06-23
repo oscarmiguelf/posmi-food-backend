@@ -60,6 +60,7 @@ model User {
 
   companyId    String  @map("company_id")
   roleId       String  @map("role_id")
+  stationId    String? @map("station_id")
   name         String
   email        String
   passwordHash String  @map("password_hash")
@@ -67,6 +68,7 @@ model User {
 
   company              Company               @relation(fields: [companyId], references: [id])
   role                 Role                  @relation(fields: [roleId], references: [id])
+  station              Station?              @relation(fields: [stationId], references: [id])
   userBranches         UserBranch[]
   discountsApplied     Discount[]
   cashRegisterSessions CashRegisterSession[]
@@ -174,6 +176,7 @@ model Station {
 
   menuItemStations MenuItemStation[]
   orderItems       OrderItem[]
+  users            User[]
 
   @@map("stations")
 }
