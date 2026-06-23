@@ -1,7 +1,11 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { LoginUseCase } from '../../application/use-cases/login.use-case';
-import { LoginDto, RefreshTokenDto } from '../../application/dto/login.dto';
+import {
+  LoginDto,
+  RefreshTokenDto,
+  ChangePasswordDto,
+} from '../../application/dto/login.dto';
 import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
 import {
   CurrentUser,
@@ -24,6 +28,17 @@ export class AuthController {
     return toResponse(
       await this.loginUseCase.refresh(dto.refreshToken, dto.refreshToken),
     );
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Patch('change-password')
+  async changePassword(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    await this.loginUseCase.changePassword(user.sub, dto);
+    return toResponse({ message: 'Password changed successfully' });
   }
 
   @ApiBearerAuth()

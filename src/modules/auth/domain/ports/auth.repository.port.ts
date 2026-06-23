@@ -23,4 +23,8 @@ export abstract class AuthRepositoryPort {
     userId: string,
     tokenHash: string,
   ): Promise<boolean>;
+  abstract updatePasswordHash(
+    userId: string,
+    passwordHash: string,
+  ): Promise<void>;
 }

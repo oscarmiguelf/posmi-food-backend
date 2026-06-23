@@ -78,6 +78,16 @@ export class AuthRepository implements AuthRepositoryPort {
     return true;
   }
 
+  async updatePasswordHash(
+    userId: string,
+    passwordHash: string,
+  ): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+  }
+
   private mapToRecord(user: {
     id: string;
     email: string;

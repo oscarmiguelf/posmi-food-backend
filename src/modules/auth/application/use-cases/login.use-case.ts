@@ -2,7 +2,11 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { AuthRepositoryPort } from '../../domain/ports/auth.repository.port';
-import { LoginDto, TokensResponseDto } from '../dto/login.dto';
+import {
+  LoginDto,
+  ChangePasswordDto,
+  TokensResponseDto,
+} from '../dto/login.dto';
 import { CurrentUserPayload } from '../../../../shared/decorators/current-user.decorator';
 
 @Injectable()
@@ -50,6 +54,19 @@ export class LoginUseCase {
       companyId: user.companyId,
       branchIds: user.branchIds,
     });
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
+    const user = await this.authRepo.findUserById(userId);
+    if (!user || !user.isActive)
+      throw new UnauthorizedException('User not found or inactive');
+
+    const match = await bcrypt.compare(dto.currentPassword, user.passwordHash);
+    if (!match)
+      throw new UnauthorizedException('Current password is incorrect');
+
+    const newHash = await bcrypt.hash(dto.newPassword, 12);
+    await this.authRepo.updatePasswordHash(userId, newHash);
   }
 
   private async generateTokens(
