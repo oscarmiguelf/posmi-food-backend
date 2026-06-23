@@ -24,6 +24,7 @@ import { CustomersModule } from './modules/customers/customers.module';
 import { ReservationsModule } from './modules/reservations/reservations.module';
 import { SyncModule } from './modules/sync/sync.module';
 import { HealthModule } from './health/health.module';
+import { BusinessModule } from './modules/business/business.module';
 
 @Module({
   imports: [
@@ -52,8 +53,9 @@ import { HealthModule } from './health/health.module';
     ReservationsModule,
     // Fase 6 — Offline-first sync
     SyncModule,
-    // Config
+    // Config & business
     ConfigAppModule,
+    BusinessModule,
     HealthModule,
   ],
   providers: [
