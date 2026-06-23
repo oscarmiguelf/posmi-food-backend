@@ -1,7 +1,7 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { Request } from 'express';
 
-export interface CurrentUserPayload {
+export class CurrentUserPayload {
   sub: string;
   email: string;
   roleId: string;
