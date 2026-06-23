@@ -25,6 +25,7 @@ import { ReservationsModule } from './modules/reservations/reservations.module';
 import { SyncModule } from './modules/sync/sync.module';
 import { HealthModule } from './health/health.module';
 import { BusinessModule } from './modules/business/business.module';
+import { DigitalMenuModule } from './modules/digital-menu/digital-menu.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { BusinessModule } from './modules/business/business.module';
     // Config & business
     ConfigAppModule,
     BusinessModule,
+    DigitalMenuModule,
     HealthModule,
   ],
   providers: [
