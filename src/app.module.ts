@@ -20,6 +20,7 @@ import { SuppliersModule } from './modules/suppliers/suppliers.module';
 import { PurchaseOrdersModule } from './modules/purchase-orders/purchase-orders.module';
 import { CustomersModule } from './modules/customers/customers.module';
 import { ReservationsModule } from './modules/reservations/reservations.module';
+import { SyncModule } from './modules/sync/sync.module';
 
 @Module({
   imports: [
@@ -45,6 +46,8 @@ import { ReservationsModule } from './modules/reservations/reservations.module';
     // Fase 5 — Clientes
     CustomersModule,
     ReservationsModule,
+    // Fase 6 — Offline-first sync
+    SyncModule,
     // Config
     ConfigAppModule,
   ],

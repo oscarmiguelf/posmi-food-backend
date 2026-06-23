@@ -1,0 +1,48 @@
+services:
+  postgres-local:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: posmi_food_local
+      POSTGRES_USER: posmi
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-posmi_local}
+    volumes:
+      - postgres_local_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U posmi -d posmi_food_local']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://posmi:${DB_PASSWORD:-posmi_local}@postgres-local:5432/posmi_food_local
+      JWT_SECRET: ${JWT_SECRET}
+      # Sync: this instance is the Local Hub
+      SYNC_MODE: local_hub
+      CLOUD_API_URL: ${CLOUD_API_URL}
+      HUB_SECRET: ${HUB_SECRET}
+      PORT: 3000
+    ports:
+      - '3000:3000'
+    depends_on:
+      postgres-local:
+        condition: service_healthy
+
+  # Reverse proxy for mDNS / fixed hostname (pos-local.local)
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+    volumes:
+      - ./Caddyfile.local-hub:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - backend
+
+volumes:
+  postgres_local_data:

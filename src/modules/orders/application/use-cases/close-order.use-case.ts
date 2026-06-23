@@ -5,12 +5,14 @@ import { EventsGateway } from '../../../../shared/websocket/events.gateway';
 import { CloseOrderDto } from '../dto/order.dto';
 import { AppError } from '../../../../shared/response/app-error';
 import { CurrentUserPayload } from '../../../../shared/decorators/current-user.decorator';
+import { OutboxService } from '../../../sync/outbox/outbox.service';
 
 @Injectable()
 export class CloseOrderUseCase {
   constructor(
     private readonly prisma: PrismaService,
     private readonly events: EventsGateway,
+    private readonly outbox: OutboxService,
   ) {}
 
   async execute(
@@ -208,6 +210,20 @@ export class CloseOrderUseCase {
           expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         },
       });
+
+      // Outbox: forward order.closed to Cloud for remote monitoring
+      await this.outbox.publish(
+        'order.closed',
+        {
+          branchId,
+          orderId,
+          tableId: order.tableId,
+          tableLabel: order.table?.label,
+          total: total.toFixed(2),
+        },
+        `outbox:order.closed:${dto.idempotencyKey}`,
+        tx,
+      );
 
       return {
         ...closed,

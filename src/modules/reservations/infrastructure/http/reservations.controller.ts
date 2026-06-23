@@ -28,6 +28,7 @@ import {
   CreateReservationDto,
   UpdateReservationDto,
 } from '../../application/dto/reservation.dto';
+import { OutboxService } from '../../../sync/outbox/outbox.service';
 
 type ReservationStatus =
   | 'pending'
@@ -41,7 +42,10 @@ type ReservationStatus =
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller('reservations')
 export class ReservationsController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly outbox: OutboxService,
+  ) {}
 
   @Get()
   @ApiQuery({
@@ -323,6 +327,22 @@ export class ReservationsController {
       where: { id },
       data: { status: toStatus, version: { increment: 1 } },
     });
+
+    // Forward confirmed/arrived events for remote monitoring
+    if (toStatus === 'confirmed' || toStatus === 'arrived') {
+      void this.outbox.publish(
+        `reservation.${toStatus}`,
+        {
+          branchId: reservation.branchId,
+          reservationId: id,
+          customerId: reservation.customerId,
+          tableId: reservation.tableId,
+          dateTime: reservation.dateTime.toISOString(),
+        },
+        `outbox:reservation.${toStatus}:${id}:${Date.now()}`,
+      );
+    }
+
     return toResponse(updated);
   }
 }

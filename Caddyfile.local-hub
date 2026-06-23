@@ -1,0 +1,5 @@
+# Serve the Local Hub under a fixed hostname on the local network.
+# Tablets discover this via mDNS/Bonjour as pos-local.local (section 8.2).
+:80 {
+    reverse_proxy backend:3000
+}

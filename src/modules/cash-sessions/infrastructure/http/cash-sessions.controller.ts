@@ -25,6 +25,7 @@ import {
   toPaginatedResponse,
 } from '../../../../shared/response/api-response';
 import { AppError } from '../../../../shared/response/app-error';
+import { OutboxService } from '../../../sync/outbox/outbox.service';
 
 class OpenCashSessionDto {
   @ApiProperty()
@@ -77,6 +78,7 @@ export class CashSessionsController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly events: EventsGateway,
+    private readonly outbox: OutboxService,
   ) {}
 
   @Get()
@@ -124,6 +126,12 @@ export class CashSessionsController {
       sessionId: session.id,
       cashierId: user.sub,
     });
+
+    void this.outbox.publish(
+      'cash_session.opened',
+      { branchId, sessionId: session.id, cashierId: user.sub },
+      `outbox:cash_session.opened:${dto.idempotencyKey}`,
+    );
 
     return toResponse(session);
   }
@@ -239,14 +247,26 @@ export class CashSessionsController {
       return c;
     });
 
-    this.events.emitToBranch(session.branchId, 'cash_session.closed', {
+    const closePayload = {
+      branchId: session.branchId,
       sessionId: id,
       systemAmount: systemAmount.toFixed(2),
       declaredAmount: dto.closingAmountDeclared,
       difference: new Decimal(dto.closingAmountDeclared)
         .minus(systemAmount)
         .toFixed(2),
-    });
+    };
+    this.events.emitToBranch(
+      session.branchId,
+      'cash_session.closed',
+      closePayload,
+    );
+
+    void this.outbox.publish(
+      'cash_session.closed',
+      closePayload,
+      `outbox:cash_session.closed:${dto.idempotencyKey}`,
+    );
 
     return toResponse(closed);
   }
