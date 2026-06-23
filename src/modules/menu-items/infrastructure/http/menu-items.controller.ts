@@ -250,4 +250,61 @@ export class MenuItemsController {
 
     return toResponse(recipe);
   }
+
+  @Get(':id/extras')
+  @RequirePermission('VIEW_MENU')
+  async listExtras(@Param('id', ParseUUIDPipe) id: string) {
+    const extras = await this.prisma.menuItemExtra.findMany({
+      where: { menuItemId: id, deletedAt: null },
+      orderBy: { ingredientName: 'asc' },
+    });
+    return toResponse(
+      extras.map((e) => ({
+        ...e,
+        priceWithTax: e.priceWithTax.toString(),
+      })),
+    );
+  }
+
+  @Post(':id/extras')
+  @RequirePermission('MANAGE_MENU_ITEMS')
+  async addExtra(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { ingredientName: string; priceWithTax: string },
+  ) {
+    const menuItem = await this.prisma.menuItem.findFirst({
+      where: { id, deletedAt: null },
+    });
+    if (!menuItem) throw AppError.notFound('MenuItem', id);
+
+    const extra = await this.prisma.menuItemExtra.create({
+      data: {
+        menuItemId: id,
+        ingredientName: body.ingredientName,
+        priceWithTax: new Decimal(body.priceWithTax).toFixed(2),
+      },
+    });
+    return toResponse({
+      ...extra,
+      priceWithTax: extra.priceWithTax.toString(),
+    });
+  }
+
+  @Delete(':menuItemId/extras/:extraId')
+  @RequirePermission('MANAGE_MENU_ITEMS')
+  async removeExtra(
+    @Param('menuItemId', ParseUUIDPipe) menuItemId: string,
+    @Param('extraId', ParseUUIDPipe) extraId: string,
+  ) {
+    const extra = await this.prisma.menuItemExtra.findFirst({
+      where: { id: extraId, menuItemId, deletedAt: null },
+    });
+    if (!extra) throw AppError.notFound('MenuItemExtra', extraId);
+
+    await this.prisma.menuItemExtra.update({
+      where: { id: extraId },
+      data: { deletedAt: new Date() },
+    });
+    return toResponse({ deleted: true });
+  }
 }

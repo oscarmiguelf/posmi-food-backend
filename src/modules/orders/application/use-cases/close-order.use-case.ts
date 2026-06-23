@@ -30,7 +30,7 @@ export class CloseOrderUseCase {
     const order = await this.prisma.order.findFirst({
       where: { id: orderId, branchId, deletedAt: null },
       include: {
-        items: true,
+        items: { include: { modifiers: true } },
         discounts: true,
         table: true,
       },
@@ -41,14 +41,20 @@ export class CloseOrderUseCase {
     if (order.version !== dto.version)
       throw AppError.staleData('Order', orderId);
 
-    // Calculate totals
-    const subtotal = order.items.reduce(
-      (acc, item) =>
-        acc.plus(
-          new Decimal(item.unitPriceWithTax.toString()).times(item.quantity),
-        ),
-      new Decimal(0),
-    );
+    // Calculate totals (base price + extra prices)
+    const subtotal = order.items.reduce((acc, item) => {
+      const baseTotal = new Decimal(item.unitPriceWithTax.toString()).times(
+        item.quantity,
+      );
+      const extrasTotal = item.modifiers
+        .filter((m) => m.action === 'add')
+        .reduce(
+          (sum, m) =>
+            sum.plus(new Decimal(m.extraPrice.toString()).times(item.quantity)),
+          new Decimal(0),
+        );
+      return acc.plus(baseTotal).plus(extrasTotal);
+    }, new Decimal(0));
 
     const discountTotal = order.discounts.reduce(
       (acc, d) => acc.plus(new Decimal(d.value.toString())),

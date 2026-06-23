@@ -42,6 +42,7 @@ export class CreateOrderUseCase {
           branchId,
           tableId: dto.tableId,
           customerId: dto.customerId,
+          customerName: dto.customerName,
           idempotencyKey: dto.idempotencyKey,
           items: {
             create: dto.items.map((item) => {
@@ -62,6 +63,7 @@ export class CreateOrderUseCase {
                     create: item.modifiers.map((m) => ({
                       ingredientName: m.ingredientName,
                       action: m.action,
+                      extraPrice: m.extraPrice ?? '0',
                     })),
                   },
                 }),

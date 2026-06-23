@@ -21,6 +21,11 @@ export class ItemModifierDto {
   @ApiProperty({ enum: ['remove', 'add'] })
   @IsEnum(['remove', 'add'])
   action: 'remove' | 'add';
+
+  @ApiPropertyOptional({ example: '15.00' })
+  @IsOptional()
+  @IsString()
+  extraPrice?: string;
 }
 
 export class OrderItemInputDto {
@@ -69,6 +74,13 @@ export class CreateOrderDto {
   @IsOptional()
   @IsUUID()
   customerId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Nombre genérico si no hay cliente registrado',
+  })
+  @IsOptional()
+  @IsString()
+  customerName?: string;
 
   @ApiProperty({ type: [OrderItemInputDto] })
   @IsArray()

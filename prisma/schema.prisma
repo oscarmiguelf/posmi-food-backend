@@ -213,6 +213,7 @@ model MenuItem {
   menuItemStations MenuItemStation[]
   orderItems       OrderItem[]
   recipe           Recipe?
+  extras           MenuItemExtra[]
 
   @@map("menu_items")
 }
@@ -226,6 +227,23 @@ model MenuItemStation {
 
   @@id([menuItemId, stationId])
   @@map("menu_item_stations")
+}
+
+model MenuItemExtra {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  version   Int       @default(0)
+
+  menuItemId     String  @map("menu_item_id")
+  ingredientName String  @map("ingredient_name")
+  priceWithTax   Decimal @default(0) @map("price_with_tax") @db.Decimal(12, 2)
+
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+
+  @@unique([menuItemId, ingredientName, deletedAt])
+  @@map("menu_item_extras")
 }
 
 enum OrderStatus {
@@ -247,6 +265,7 @@ model Order {
   branchId       String      @map("branch_id")
   tableId        String?     @map("table_id")
   customerId     String?     @map("customer_id")
+  customerName   String?     @map("customer_name")
   status         OrderStatus @default(open)
   idempotencyKey String      @unique @map("idempotency_key")
 
@@ -286,10 +305,11 @@ model OrderItem {
 }
 
 model OrderItemModifier {
-  id             String @id @default(uuid())
-  orderItemId    String @map("order_item_id")
-  ingredientName String @map("ingredient_name")
-  action         String // 'remove' | 'add'
+  id             String  @id @default(uuid())
+  orderItemId    String  @map("order_item_id")
+  ingredientName String  @map("ingredient_name")
+  action         String  // 'remove' | 'add'
+  extraPrice     Decimal @default(0) @map("extra_price") @db.Decimal(12, 2)
 
   orderItem OrderItem @relation(fields: [orderItemId], references: [id])
 
