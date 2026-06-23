@@ -14,6 +14,8 @@ import { MenuItemsModule } from './modules/menu-items/menu-items.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { CashSessionsModule } from './modules/cash-sessions/cash-sessions.module';
 import { ConfigAppModule } from './modules/config/config-app.module';
+import { IngredientsModule } from './modules/ingredients/ingredients.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -30,6 +32,9 @@ import { ConfigAppModule } from './modules/config/config-app.module';
     MenuItemsModule,
     OrdersModule,
     CashSessionsModule,
+    // Fase 2 — Insumos, recetas y costos
+    IngredientsModule,
+    ReportsModule,
     // Config
     ConfigAppModule,
   ],

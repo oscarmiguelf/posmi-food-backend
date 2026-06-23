@@ -66,6 +66,51 @@ export class CloseOrderUseCase {
       );
     }
 
+    // Load recipes for inventory decrement
+    const menuItemIds = [...new Set(order.items.map((i) => i.menuItemId))];
+    const recipes = await this.prisma.recipe.findMany({
+      where: { menuItemId: { in: menuItemIds }, deletedAt: null },
+      include: {
+        recipeItems: {
+          where: { deletedAt: null },
+          include: {
+            ingredient: { select: { id: true, name: true, minStock: true } },
+          },
+        },
+      },
+    });
+    const recipeByMenuItemId = new Map(recipes.map((r) => [r.menuItemId, r]));
+
+    // Aggregate how much of each ingredient to decrement
+    const decrements = new Map<
+      string,
+      { name: string; qty: Decimal; minStock: Decimal }
+    >();
+    for (const item of order.items) {
+      const recipe = recipeByMenuItemId.get(item.menuItemId);
+      if (!recipe) continue;
+      for (const ri of recipe.recipeItems) {
+        const qty = new Decimal(ri.quantity.toString()).times(item.quantity);
+        const existing = decrements.get(ri.ingredientId);
+        if (existing) {
+          existing.qty = existing.qty.plus(qty);
+        } else {
+          decrements.set(ri.ingredientId, {
+            name: ri.ingredient.name,
+            qty,
+            minStock: new Decimal(ri.ingredient.minStock.toString()),
+          });
+        }
+      }
+    }
+
+    const depletedIngredients: {
+      id: string;
+      name: string;
+      stock: string;
+      minStock: string;
+    }[] = [];
+
     const result = await this.prisma.$transaction(async (tx) => {
       const closed = await tx.order.update({
         where: { id: orderId },
@@ -103,6 +148,37 @@ export class CloseOrderUseCase {
         });
       }
 
+      // Decrement ingredient stock for every recipe item consumed
+      for (const [ingredientId, { name, qty, minStock }] of decrements) {
+        const updated = await tx.ingredient.update({
+          where: { id: ingredientId },
+          data: {
+            stockQuantity: { decrement: parseFloat(qty.toFixed(3)) },
+            version: { increment: 1 },
+          },
+        });
+
+        await tx.inventoryMovement.create({
+          data: {
+            branchId,
+            ingredientId,
+            quantityDelta: qty.negated().toFixed(3),
+            reason: 'sale',
+            referenceId: orderId,
+          },
+        });
+
+        const newStock = new Decimal(updated.stockQuantity.toString());
+        if (newStock.lessThanOrEqualTo(minStock)) {
+          depletedIngredients.push({
+            id: ingredientId,
+            name,
+            stock: newStock.toFixed(3),
+            minStock: minStock.toFixed(3),
+          });
+        }
+      }
+
       await tx.processedOperation.create({
         data: {
           idempotencyKey: `close:${dto.idempotencyKey}`,
@@ -119,6 +195,16 @@ export class CloseOrderUseCase {
         discountTotal: discountTotal.toFixed(2),
       };
     });
+
+    // Emit ingredient.depleted for any stock that hit or went below minimum
+    for (const ing of depletedIngredients) {
+      this.events.emitToBranch(branchId, 'ingredient.depleted', {
+        ingredientId: ing.id,
+        name: ing.name,
+        stockQuantity: ing.stock,
+        minStock: ing.minStock,
+      });
+    }
 
     // Emit events
     this.events.emitToBranch(branchId, 'order.closed', {
