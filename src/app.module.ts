@@ -16,6 +16,8 @@ import { CashSessionsModule } from './modules/cash-sessions/cash-sessions.module
 import { ConfigAppModule } from './modules/config/config-app.module';
 import { IngredientsModule } from './modules/ingredients/ingredients.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { SuppliersModule } from './modules/suppliers/suppliers.module';
+import { PurchaseOrdersModule } from './modules/purchase-orders/purchase-orders.module';
 
 @Module({
   imports: [
@@ -35,6 +37,9 @@ import { ReportsModule } from './modules/reports/reports.module';
     // Fase 2 — Insumos, recetas y costos
     IngredientsModule,
     ReportsModule,
+    // Fase 3 — Compras
+    SuppliersModule,
+    PurchaseOrdersModule,
     // Config
     ConfigAppModule,
   ],
