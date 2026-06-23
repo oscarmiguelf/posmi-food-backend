@@ -179,10 +179,31 @@ export class CloseOrderUseCase {
         }
       }
 
+      // LoyaltyPoints: 1 point per $10 MXN of the order total
+      if (order.customerId) {
+        const pointsEarned = Math.floor(total.div(10).toNumber());
+        if (pointsEarned > 0) {
+          await tx.loyaltyPoints.create({
+            data: {
+              customerId: order.customerId,
+              orderId,
+              points: pointsEarned,
+            },
+          });
+        }
+      }
+
       await tx.processedOperation.create({
         data: {
           idempotencyKey: `close:${dto.idempotencyKey}`,
-          result: { orderId, total: total.toFixed(2), status: 'closed' },
+          result: {
+            orderId,
+            total: total.toFixed(2),
+            status: 'closed',
+            pointsEarned: order.customerId
+              ? Math.floor(total.div(10).toNumber())
+              : 0,
+          },
           processedAt: new Date(),
           expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         },
@@ -193,6 +214,9 @@ export class CloseOrderUseCase {
         total: total.toFixed(2),
         subtotal: subtotal.toFixed(2),
         discountTotal: discountTotal.toFixed(2),
+        pointsEarned: order.customerId
+          ? Math.floor(total.div(10).toNumber())
+          : 0,
       };
     });
 

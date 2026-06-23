@@ -18,6 +18,8 @@ import { IngredientsModule } from './modules/ingredients/ingredients.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { SuppliersModule } from './modules/suppliers/suppliers.module';
 import { PurchaseOrdersModule } from './modules/purchase-orders/purchase-orders.module';
+import { CustomersModule } from './modules/customers/customers.module';
+import { ReservationsModule } from './modules/reservations/reservations.module';
 
 @Module({
   imports: [
@@ -40,6 +42,9 @@ import { PurchaseOrdersModule } from './modules/purchase-orders/purchase-orders.
     // Fase 3 — Compras
     SuppliersModule,
     PurchaseOrdersModule,
+    // Fase 5 — Clientes
+    CustomersModule,
+    ReservationsModule,
     // Config
     ConfigAppModule,
   ],
