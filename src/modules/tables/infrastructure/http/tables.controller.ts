@@ -79,7 +79,6 @@ export class TablesController {
       where: { id, branchId: { in: user.branchIds }, deletedAt: null },
     });
     if (!table) throw AppError.notFound('Table', id);
-    if (table.version !== dto.version) throw AppError.staleData('Table', id);
 
     const updated = await this.prisma.table.update({
       where: { id },

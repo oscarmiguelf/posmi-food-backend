@@ -1,4 +1,4 @@
-import { IsString, IsInt, Min, IsEnum, IsNumber } from 'class-validator';
+import { IsString, IsInt, Min, IsEnum } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { TableStatus } from '@prisma/client';
 
@@ -17,8 +17,4 @@ export class UpdateTableStatusDto {
   @ApiProperty({ enum: TableStatus })
   @IsEnum(TableStatus)
   status: TableStatus;
-
-  @ApiProperty()
-  @IsNumber()
-  version: number;
 }
