@@ -207,6 +207,32 @@ export class MenuItemsController {
     return toResponse({ deleted: true });
   }
 
+  @Get(':id/recipe')
+  @RequirePermission('VIEW_MENU')
+  async getRecipe(@Param('id', ParseUUIDPipe) menuItemId: string) {
+    const recipe = await this.prisma.recipe.findFirst({
+      where: { menuItemId, deletedAt: null },
+      include: {
+        recipeItems: {
+          where: { deletedAt: null },
+          include: {
+            ingredient: { select: { id: true, name: true, unit: true } },
+          },
+        },
+      },
+    });
+    if (!recipe) return toResponse({ items: [] });
+    return toResponse({
+      id: recipe.id,
+      items: recipe.recipeItems.map((ri) => ({
+        ingredientId: ri.ingredientId,
+        ingredientName: ri.ingredient.name,
+        unit: ri.unit,
+        quantity: ri.quantity.toString(),
+      })),
+    });
+  }
+
   @Put(':id/recipe')
   @RequirePermission('MANAGE_RECIPES')
   async upsertRecipe(
