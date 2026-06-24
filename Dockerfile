@@ -17,4 +17,4 @@ COPY prisma ./prisma
 COPY config ./config
 COPY package.json ./
 
-CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy && node dist/main"]
+CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy && node dist/src/main"]
