@@ -6,6 +6,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
   Headers,
 } from '@nestjs/common';
@@ -48,12 +49,17 @@ export class OrdersController {
 
   @Get()
   @RequirePermission('VIEW_TABLES')
-  async list(@CurrentUser() user: CurrentUserPayload) {
+  async list(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query('tableId') tableId?: string,
+    @Query('status') status?: string,
+  ) {
     const orders = await this.prisma.order.findMany({
       where: {
         branchId: { in: user.branchIds },
-        status: { not: 'closed' },
+        status: status ? (status as 'open' | 'closed') : { not: 'closed' },
         deletedAt: null,
+        ...(tableId && { tableId }),
       },
       include: {
         table: { select: { id: true, label: true } },
