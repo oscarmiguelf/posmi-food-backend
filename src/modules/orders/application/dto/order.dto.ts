@@ -11,7 +11,6 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { OrderStatus } from '@prisma/client';
 
 export class ItemModifierDto {
   @ApiProperty()
@@ -101,14 +100,10 @@ export class AddOrderItemDto {
   items: OrderItemInputDto[];
 }
 
-export class UpdateOrderStatusDto {
-  @ApiProperty({ enum: ['in_kitchen', 'ready', 'closed'] })
-  @IsEnum(['in_kitchen', 'ready', 'closed'])
-  status: Extract<OrderStatus, 'in_kitchen' | 'ready' | 'closed'>;
-
-  @ApiProperty()
-  @IsNumber()
-  version: number;
+export class UpdateItemStatusDto {
+  @ApiProperty({ enum: ['pending', 'in_kitchen', 'ready', 'delivered'] })
+  @IsString()
+  itemStatus: string;
 }
 
 export class CloseOrderDto {
@@ -121,7 +116,7 @@ export class CloseOrderDto {
     description: 'Pagos parciales (monto + método)',
   })
   @IsArray()
-  payments: { amount: string; paymentMethod: 'cash' | 'card' | 'transfer' }[];
+  payments: { amount: number; paymentMethod: 'cash' | 'card' | 'transfer' }[];
 
   @ApiProperty()
   @IsNumber()

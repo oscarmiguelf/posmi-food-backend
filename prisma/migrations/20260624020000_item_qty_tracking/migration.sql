@@ -1,0 +1,2 @@
+ALTER TABLE "order_items" ADD COLUMN "ready_qty" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "order_items" ADD COLUMN "delivered_qty" INTEGER NOT NULL DEFAULT 0;

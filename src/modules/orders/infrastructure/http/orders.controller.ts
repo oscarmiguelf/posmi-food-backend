@@ -26,7 +26,6 @@ import {
   ApplyDiscountDto,
   CloseOrderDto,
   CreateOrderDto,
-  UpdateOrderStatusDto,
 } from '../../application/dto/order.dto';
 import {
   toResponse,
@@ -176,41 +175,66 @@ export class OrdersController {
     return toResponse({ addedCount: newItems.count });
   }
 
-  @Patch(':id/status')
+  @Patch(':orderId/items/:itemId/status')
   @RequirePermission('CHANGE_ORDER_STATUS')
-  async updateStatus(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateOrderStatusDto,
+  async updateItemStatus(
+    @Param('orderId', ParseUUIDPipe) orderId: string,
+    @Param('itemId', ParseUUIDPipe) itemId: string,
+    @Body()
+    dto: { itemStatus: string; qty?: number },
     @CurrentUser() user: CurrentUserPayload,
   ) {
     const order = await this.prisma.order.findFirst({
-      where: { id, branchId: { in: user.branchIds }, deletedAt: null },
+      where: { id: orderId, branchId: { in: user.branchIds }, deletedAt: null },
     });
-    if (!order) throw AppError.notFound('Order', id);
-    if (order.version !== dto.version) throw AppError.staleData('Order', id);
+    if (!order) throw AppError.notFound('Order', orderId);
 
-    const updated = await this.prisma.$transaction(async (tx) => {
-      const u = await tx.order.update({
-        where: { id },
-        data: { status: dto.status, version: { increment: 1 } },
-      });
-      await tx.orderStatusHistory.create({
-        data: {
-          orderId: id,
-          fromStatus: order.status,
-          toStatus: dto.status,
-          changedBy: user.sub,
-        },
-      });
-      return u;
+    const item = await this.prisma.orderItem.findFirst({
+      where: { id: itemId, orderId },
+      include: {
+        menuItem: { select: { name: true } },
+        station: { select: { name: true } },
+      },
+    });
+    if (!item) throw AppError.notFound('OrderItem', itemId);
+
+    const qtyChange = dto.qty ?? item.quantity;
+
+    const data: Record<string, unknown> = {};
+    if (dto.itemStatus === 'ready') {
+      const newReady = Math.min(item.readyQty + qtyChange, item.quantity);
+      data.readyQty = newReady;
+      data.itemStatus = newReady >= item.quantity ? 'ready' : 'in_kitchen';
+    } else if (dto.itemStatus === 'delivered') {
+      const newDelivered = Math.min(
+        item.deliveredQty + qtyChange,
+        item.quantity,
+      );
+      data.deliveredQty = newDelivered;
+      data.itemStatus = newDelivered >= item.quantity ? 'delivered' : 'ready';
+    } else {
+      data.itemStatus = dto.itemStatus;
+    }
+
+    const updated = await this.prisma.orderItem.update({
+      where: { id: itemId },
+      data,
     });
 
     const eventName =
-      dto.status === 'ready' ? 'order.ready' : 'order.status_changed';
+      dto.itemStatus === 'ready'
+        ? 'order.item.ready'
+        : 'order.item.status_changed';
     this.events.emitToBranch(order.branchId, eventName, {
-      orderId: id,
+      orderId,
+      itemId,
       tableId: order.tableId,
-      status: dto.status,
+      itemStatus: updated.itemStatus,
+      readyQty: updated.readyQty,
+      deliveredQty: updated.deliveredQty,
+      quantity: item.quantity,
+      menuItemName: item.menuItem.name,
+      stationName: item.station.name,
     });
 
     return toResponse(updated);

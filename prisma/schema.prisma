@@ -272,10 +272,17 @@ model MenuItemExtra {
   @@map("menu_item_extras")
 }
 
-enum OrderStatus {
-  open
+enum OrderItemStatus {
+  pending
   in_kitchen
   ready
+  delivered
+
+  @@map("order_item_status")
+}
+
+enum OrderStatus {
+  open
   closed
 
   @@map("order_status")
@@ -314,12 +321,15 @@ model OrderItem {
   deletedAt DateTime? @map("deleted_at")
   version   Int       @default(0)
 
-  orderId          String  @map("order_id")
-  menuItemId       String  @map("menu_item_id")
-  stationId        String  @map("station_id")
+  orderId          String          @map("order_id")
+  menuItemId       String          @map("menu_item_id")
+  stationId        String          @map("station_id")
   quantity         Int
-  unitPriceWithTax Decimal @map("unit_price_with_tax") @db.Decimal(12, 2)
+  unitPriceWithTax Decimal         @map("unit_price_with_tax") @db.Decimal(12, 2)
   notes            String?
+  itemStatus       OrderItemStatus @default(pending) @map("item_status")
+  readyQty         Int             @default(0) @map("ready_qty")
+  deliveredQty     Int             @default(0) @map("delivered_qty")
 
   order     Order    @relation(fields: [orderId], references: [id])
   menuItem  MenuItem @relation(fields: [menuItemId], references: [id])
@@ -357,10 +367,10 @@ model OrderStatusHistory {
   id        String   @id @default(uuid())
   createdAt DateTime @default(now()) @map("created_at")
 
-  orderId    String      @map("order_id")
-  fromStatus OrderStatus @map("from_status")
-  toStatus   OrderStatus @map("to_status")
-  changedBy  String      @map("changed_by")
+  orderId    String @map("order_id")
+  fromStatus String @map("from_status")
+  toStatus   String @map("to_status")
+  changedBy  String @map("changed_by")
 
   order Order @relation(fields: [orderId], references: [id])
 
