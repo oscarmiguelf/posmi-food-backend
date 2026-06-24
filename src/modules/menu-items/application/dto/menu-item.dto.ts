@@ -1,6 +1,5 @@
 import {
   IsString,
-  IsNumberString,
   IsArray,
   IsUUID,
   IsOptional,
@@ -18,12 +17,9 @@ export class CreateMenuItemDto {
   @IsString()
   category: string;
 
-  @ApiProperty({
-    example: '120.00',
-    description: 'Precio final con IVA incluido',
-  })
-  @IsNumberString()
-  salePriceWithTax: string;
+  @ApiProperty({ example: 120.0, description: 'Precio final con IVA incluido' })
+  @IsNumber()
+  salePriceWithTax: number;
 
   @ApiProperty({
     type: [String],
@@ -45,10 +41,10 @@ export class UpdateMenuItemDto {
   @IsString()
   category?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: 130.0 })
   @IsOptional()
-  @IsNumberString()
-  salePriceWithTax?: string;
+  @IsNumber()
+  salePriceWithTax?: number;
 
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()

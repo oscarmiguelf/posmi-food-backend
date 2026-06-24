@@ -4,7 +4,7 @@ import {
   IsUUID,
   IsArray,
   ValidateNested,
-  IsNumberString,
+  IsNumber,
   IsOptional,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -14,13 +14,13 @@ export class PurchaseOrderItemDto {
   @IsUUID()
   ingredientId: string;
 
-  @ApiProperty({ example: '50.000', description: 'Units to order' })
-  @IsNumberString()
-  quantityOrdered: string;
+  @ApiProperty({ example: 50.0 })
+  @IsNumber()
+  quantityOrdered: number;
 
-  @ApiProperty({ example: '90.00', description: 'Agreed unit cost in MXN' })
-  @IsNumberString()
-  unitCost: string;
+  @ApiProperty({ example: 90.0 })
+  @IsNumber()
+  unitCost: number;
 }
 
 export class CreatePurchaseOrderDto {
@@ -44,9 +44,9 @@ export class ReceiveItemDto {
   @IsUUID()
   ingredientId: string;
 
-  @ApiProperty({ example: '48.500', description: 'Actual quantity received' })
-  @IsNumberString()
-  quantityReceived: string;
+  @ApiProperty({ example: 48.5 })
+  @IsNumber()
+  quantityReceived: number;
 }
 
 export class ReceivePurchaseOrderDto {
@@ -60,7 +60,7 @@ export class ReceivePurchaseOrderDto {
   @Type(() => ReceiveItemDto)
   items: ReceiveItemDto[];
 
-  @ApiPropertyOptional({ description: 'Receiving notes' })
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   notes?: string;

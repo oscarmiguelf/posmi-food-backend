@@ -1,26 +1,26 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNumberString, IsOptional, IsIn } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsIn } from 'class-validator';
 
 export class CreateIngredientDto {
   @ApiProperty({ example: 'Pollo entero' })
   @IsString()
   name: string;
 
-  @ApiProperty({ example: 'kg', description: 'Unit of measurement' })
+  @ApiProperty({ example: 'kilogramo' })
   @IsString()
   unit: string;
 
-  @ApiProperty({ example: '85.00', description: 'Cost per unit in MXN' })
-  @IsNumberString()
-  unitCost: string;
+  @ApiProperty({ example: 85.0 })
+  @IsNumber()
+  unitCost: number;
 
-  @ApiProperty({ example: '10.000', description: 'Initial stock quantity' })
-  @IsNumberString()
-  stockQuantity: string;
+  @ApiProperty({ example: 10.0 })
+  @IsNumber()
+  stockQuantity: number;
 
-  @ApiProperty({ example: '2.000', description: 'Minimum stock before alert' })
-  @IsNumberString()
-  minStock: string;
+  @ApiProperty({ example: 2.0 })
+  @IsNumber()
+  minStock: number;
 }
 
 export class UpdateIngredientDto {
@@ -34,17 +34,17 @@ export class UpdateIngredientDto {
   @IsString()
   unit?: string;
 
-  @ApiPropertyOptional({ description: 'New cost per unit in MXN' })
+  @ApiPropertyOptional({ example: 90.0 })
   @IsOptional()
-  @IsNumberString()
-  unitCost?: string;
+  @IsNumber()
+  unitCost?: number;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsNumberString()
-  minStock?: string;
+  @IsNumber()
+  minStock?: number;
 
-  @ApiProperty({ description: 'Current version for optimistic locking' })
+  @ApiProperty()
   version: number;
 }
 
@@ -57,12 +57,9 @@ export class AdjustInventoryDto {
   @IsIn(['waste', 'adjustment'])
   reason: 'waste' | 'adjustment';
 
-  @ApiProperty({
-    example: '-0.500',
-    description: 'Negative = decrease stock, positive = increase',
-  })
-  @IsNumberString()
-  quantityDelta: string;
+  @ApiProperty({ example: -0.5 })
+  @IsNumber()
+  quantityDelta: number;
 
   @ApiPropertyOptional()
   @IsOptional()

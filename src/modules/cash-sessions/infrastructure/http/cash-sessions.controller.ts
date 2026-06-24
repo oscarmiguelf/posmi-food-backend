@@ -8,7 +8,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
-import { IsNumberString, IsString, IsOptional } from 'class-validator';
+import { IsNumber, IsString, IsOptional } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import Decimal from 'decimal.js';
 import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
@@ -32,9 +32,9 @@ class OpenCashSessionDto {
   @IsString()
   idempotencyKey: string;
 
-  @ApiProperty({ example: '500.00' })
-  @IsNumberString()
-  openingAmount: string;
+  @ApiProperty({ example: 500.0 })
+  @IsNumber()
+  openingAmount: number;
 }
 
 class RegisterMovementDto {
@@ -46,9 +46,9 @@ class RegisterMovementDto {
   @IsString()
   type: 'payin' | 'payout';
 
-  @ApiProperty()
-  @IsNumberString()
-  amount: string;
+  @ApiProperty({ example: 100.0 })
+  @IsNumber()
+  amount: number;
 
   @ApiProperty({ enum: ['cash', 'card', 'transfer'] })
   @IsString()
@@ -65,9 +65,9 @@ class CloseCashSessionDto {
   @IsString()
   idempotencyKey: string;
 
-  @ApiProperty({ description: 'Monto declarado por el cajero al cerrar' })
-  @IsNumberString()
-  closingAmountDeclared: string;
+  @ApiProperty({ example: 5000.0 })
+  @IsNumber()
+  closingAmountDeclared: number;
 }
 
 @ApiTags('cash-sessions')
