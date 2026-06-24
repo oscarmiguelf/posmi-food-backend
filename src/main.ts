@@ -20,6 +20,7 @@ async function bootstrap() {
   // Replace NestJS default logger with Pino (structured JSON in prod)
   app.useLogger(app.get(Logger));
 
+  app.enableCors();
   app.enableShutdownHooks();
   app.setGlobalPrefix('api', { exclude: ['health'] });
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
